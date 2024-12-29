@@ -4,8 +4,7 @@ import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
 import ClientDashboard from "./pages/ClientDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
-import 'bootstrap/dist/css/bootstrap.min.css';
-
+import "bootstrap/dist/css/bootstrap.min.css";
 
 const App = () => {
   const [role, setRole] = useState(localStorage.getItem("role") || ""); // Persist role across refreshes
@@ -23,6 +22,7 @@ const App = () => {
   const handleLogout = () => {
     setRole("");
     localStorage.removeItem("role");
+    localStorage.removeItem("token"); // Remove token for added security
   };
 
   return (

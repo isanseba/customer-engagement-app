@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const Login = () => {
+const Login = ({ setRole }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
@@ -30,6 +30,7 @@ const Login = () => {
       // Store token and role securely
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
+      setRole(data.role); // Update the role state
 
       // Navigate to the appropriate dashboard based on role
       if (data.role === "admin") {
