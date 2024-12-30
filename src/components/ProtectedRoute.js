@@ -1,21 +1,20 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
 
-const ProtectedRoute = ({ roleRequired, children }) => {
-  const token = localStorage.getItem("token");
-  const role = localStorage.getItem("role"); // Retrieve the role from localStorage
-
+const ProtectedRoute = ({ roleRequired, role, children }) => {
   // Redirect to login if not authenticated
-  if (!token) {
+  if (!role) {
     return <Navigate to="/login" />;
   }
 
-  // Redirect to "Not Authorized" page if role doesn't match
-  if (roleRequired && role !== roleRequired) {
-    return <Navigate to="/not-authorized" />;
+  // Redirect to login if role doesn't match
+  if (Array.isArray(roleRequired) && !roleRequired.includes(role)) {
+    return <Navigate to="/login" />;
+  } else if (roleRequired !== role) {
+    return <Navigate to="/login" />;
   }
 
-  // Render the protected component if authenticated and authorized
+  // Render the protected component
   return children;
 };
 

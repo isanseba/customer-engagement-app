@@ -6,15 +6,17 @@ import CustomTable from "../components/Table";
 const AdminDashboard = ({ handleLogout }) => {
   const [businesses, setBusinesses] = useState([]);
   const [admins, setAdmins] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [businessesLoading, setBusinessesLoading] = useState(false);
+  const [adminsLoading, setAdminsLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ name: "", email: "", phone: "" });
+  const role = localStorage.getItem("role"); // Get the logged-in user's role
 
   // Fetch all businesses
   const fetchBusinesses = async () => {
-    setLoading(true);
+    setBusinessesLoading(true);
     setError("");
     try {
       const { data, error } = await supabase.from("businesses").select("*");
@@ -24,13 +26,13 @@ const AdminDashboard = ({ handleLogout }) => {
       console.error("Error fetching businesses:", error.message);
       setError("Failed to load businesses. Please try again.");
     } finally {
-      setLoading(false);
+      setBusinessesLoading(false);
     }
   };
 
   // Fetch all admins
   const fetchAdmins = async () => {
-    setLoading(true);
+    setAdminsLoading(true);
     setError("");
     try {
       const { data, error } = await supabase.from("admins").select("*");
@@ -40,12 +42,21 @@ const AdminDashboard = ({ handleLogout }) => {
       console.error("Error fetching admins:", error.message);
       setError("Failed to load admins. Please try again.");
     } finally {
-      setLoading(false);
+      setAdminsLoading(false);
     }
   };
 
   // Add a new business
   const handleAddBusiness = async () => {
+    setError("");
+    setSuccess("");
+
+    // Basic form validation
+    if (!formData.name || !formData.email || !formData.phone) {
+      setError("Please fill out all fields.");
+      return;
+    }
+
     try {
       const { error } = await supabase.from("businesses").insert([{ ...formData }]);
       if (error) throw error;
@@ -61,6 +72,14 @@ const AdminDashboard = ({ handleLogout }) => {
 
   // Delete a business
   const handleDeleteBusiness = async (id) => {
+    setError("");
+    setSuccess("");
+
+    // Confirmation dialog
+    if (!window.confirm("Are you sure you want to delete this business?")) {
+      return;
+    }
+
     try {
       const { error } = await supabase.from("businesses").delete().eq("id", id);
       if (error) throw error;
@@ -72,8 +91,21 @@ const AdminDashboard = ({ handleLogout }) => {
     }
   };
 
-  // Delete an admin
+  // Delete an admin (Superadmin only)
   const handleDeleteAdmin = async (id) => {
+    setError("");
+    setSuccess("");
+
+    if (role !== "superadmin") {
+      setError("Only superadmins can delete admins.");
+      return;
+    }
+
+    // Confirmation dialog
+    if (!window.confirm("Are you sure you want to delete this admin?")) {
+      return;
+    }
+
     try {
       const { error } = await supabase.from("admins").delete().eq("id", id);
       if (error) throw error;
@@ -97,15 +129,15 @@ const AdminDashboard = ({ handleLogout }) => {
       {error && <Alert variant="danger">{error}</Alert>}
       {success && <Alert variant="success">{success}</Alert>}
 
-      <Button onClick={() => setShowModal(true)} className="mb-3">
-        Add Business
-      </Button>
-      <Button onClick={handleLogout} variant="secondary" className="mb-3 ms-2">
-        Logout
-      </Button>
+      <div className="d-flex mb-3">
+        <Button onClick={() => setShowModal(true)}>Add Business</Button>
+        <Button onClick={handleLogout} variant="secondary" className="ms-2">
+          Logout
+        </Button>
+      </div>
 
       <h3>Businesses</h3>
-      {loading ? (
+      {businessesLoading ? (
         <Spinner animation="border" />
       ) : (
         <CustomTable
@@ -118,19 +150,29 @@ const AdminDashboard = ({ handleLogout }) => {
           actions={[
             { label: "Delete", variant: "danger", onClick: (row) => handleDeleteBusiness(row.id) },
           ]}
+          loading={businessesLoading} // Pass loading prop
         />
       )}
 
       <h3>Admins</h3>
-      {loading ? (
+      {adminsLoading ? (
         <Spinner animation="border" />
       ) : (
         <CustomTable
           data={admins}
           columns={[{ header: "Email", accessor: "email" }]}
-          actions={[
-            { label: "Remove", variant: "danger", onClick: (row) => handleDeleteAdmin(row.id) },
-          ]}
+          actions={
+            role === "superadmin"
+              ? [
+                  {
+                    label: "Remove",
+                    variant: "danger",
+                    onClick: (row) => handleDeleteAdmin(row.id),
+                  },
+                ]
+              : []
+          }
+          loading={adminsLoading} // Pass loading prop
         />
       )}
 
@@ -149,6 +191,7 @@ const AdminDashboard = ({ handleLogout }) => {
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
+                required
               />
             </Form.Group>
             <Form.Group className="mb-3">
@@ -159,6 +202,7 @@ const AdminDashboard = ({ handleLogout }) => {
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
+                required
               />
             </Form.Group>
             <Form.Group className="mb-3">
@@ -169,16 +213,17 @@ const AdminDashboard = ({ handleLogout }) => {
                 onChange={(e) =>
                   setFormData({ ...formData, phone: e.target.value })
                 }
+                required
               />
             </Form.Group>
           </Form>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowModal(false)}>
-            Close
+            Cancel
           </Button>
           <Button variant="primary" onClick={handleAddBusiness}>
-            Save Changes
+            Add Business
           </Button>
         </Modal.Footer>
       </Modal>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { useNavigate } from "react-router-dom";
+import { Spinner, Alert, Button } from "react-bootstrap";
 
 const ClientDashboard = () => {
   const [user, setUser] = useState(null);
@@ -8,46 +9,46 @@ const ClientDashboard = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      setLoading(true);
-      setError("");
+  const fetchUser = async () => {
+    setLoading(true);
+    setError("");
 
-      try {
-        // Get the current session
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
+    try {
+      // Get the current session
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
 
-        if (!sessionData?.session) {
-          throw new Error("No active session found. Please log in again.");
-        }
-
-        const userId = sessionData.session.user.id;
-
-        // Fetch the user record where the role is "business"
-        const { data: userData, error: userError } = await supabase
-          .from("users")
-          .select("*")
-          .eq("id", userId)
-          .eq("role", "business") // Ensure it's a business user
-          .single();
-
-        if (userError) {
-          if (userError.code === "PGRST116") {
-            throw new Error("No business account found for the logged-in user.");
-          }
-          throw userError;
-        }
-
-        setUser(userData);
-      } catch (err) {
-        console.error("Error fetching user data:", err.message);
-        setError("Failed to load your account details. Please try again.");
-      } finally {
-        setLoading(false);
+      if (!sessionData?.session) {
+        throw new Error("No active session found. Please log in again.");
       }
-    };
 
+      const userId = sessionData.session.user.id;
+
+      // Fetch the user record where the role is "business"
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", userId)
+        .eq("role", "business") // Ensure it's a business user
+        .single();
+
+      if (userError) {
+        if (userError.code === "PGRST116") {
+          throw new Error("No business account found for the logged-in user.");
+        }
+        throw userError;
+      }
+
+      setUser(userData);
+    } catch (err) {
+      console.error("Error fetching user data:", err.message);
+      setError("Failed to load your account details. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchUser();
   }, []);
 
@@ -69,18 +70,18 @@ const ClientDashboard = () => {
   };
 
   return (
-    <div style={styles.container}>
+    <div className="container mt-5">
       <h1>Client Dashboard</h1>
-      <button style={styles.logoutButton} onClick={handleLogout}>
+      <Button variant="danger" onClick={handleLogout} className="mb-3">
         Logout
-      </button>
+      </Button>
 
       {loading ? (
-        <p>Loading...</p>
+        <Spinner animation="border" />
       ) : error ? (
-        <p style={styles.error}>{error}</p>
+        <Alert variant="danger">{error}</Alert>
       ) : (
-        <div style={styles.userInfo}>
+        <div className="mt-4">
           <h2>Welcome, {user.business_name || "User"}!</h2>
           <p>
             <strong>Contact Email:</strong> {user.contact_email}
@@ -90,47 +91,21 @@ const ClientDashboard = () => {
             {user.api_key ? (
               <>
                 {user.api_key}{" "}
-                <button style={styles.copyButton} onClick={handleCopyApiKey}>
+                <Button variant="primary" size="sm" onClick={handleCopyApiKey}>
                   Copy
-                </button>
+                </Button>
               </>
             ) : (
               "Not set"
             )}
           </p>
+          <Button variant="secondary" onClick={fetchUser} className="mt-3">
+            Refresh
+          </Button>
         </div>
       )}
     </div>
   );
-};
-
-const styles = {
-  container: {
-    padding: "20px",
-    fontFamily: "Arial, sans-serif",
-  },
-  logoutButton: {
-    background: "red",
-    color: "white",
-    border: "none",
-    padding: "10px",
-    cursor: "pointer",
-  },
-  error: {
-    color: "red",
-    marginTop: "20px",
-  },
-  userInfo: {
-    marginTop: "20px",
-  },
-  copyButton: {
-    background: "blue",
-    color: "white",
-    border: "none",
-    padding: "5px 10px",
-    marginLeft: "10px",
-    cursor: "pointer",
-  },
 };
 
 export default ClientDashboard;

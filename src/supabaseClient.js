@@ -11,3 +11,6 @@ if (!supabaseUrl || !supabaseKey) {
 
 // Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Optional: Log Supabase client initialization for debugging
+console.log("Supabase client initialized successfully:", supabase);

@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
 import ClientDashboard from "./pages/ClientDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { supabase } from "./supabaseClient"; // Import Supabase client
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const App = () => {
@@ -11,6 +12,7 @@ const App = () => {
 
   // Sync role state with localStorage whenever it changes
   useEffect(() => {
+    console.log("Current role:", role); // Debug: Log the role
     if (role) {
       localStorage.setItem("role", role);
     } else {
@@ -18,11 +20,16 @@ const App = () => {
     }
   }, [role]);
 
-  // Function to handle logout (clear role and local storage)
-  const handleLogout = () => {
-    setRole("");
-    localStorage.removeItem("role");
-    localStorage.removeItem("token"); // Remove token for added security
+  // Function to handle logout
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut(); // Clear Supabase session
+      setRole(""); // Clear role state
+      localStorage.removeItem("role"); // Remove role from storage
+      localStorage.removeItem("token"); // Clear token for added security
+    } catch (err) {
+      console.error("Error during logout:", err);
+    }
   };
 
   return (
@@ -35,7 +42,7 @@ const App = () => {
         <Route
           path="/admin-dashboard"
           element={
-            <ProtectedRoute roleRequired="admin" role={role}>
+            <ProtectedRoute roleRequired={["superadmin", "admin"]} role={role}>
               <AdminDashboard handleLogout={handleLogout} />
             </ProtectedRoute>
           }
@@ -55,12 +62,12 @@ const App = () => {
         <Route
           path="*"
           element={
-            role === "admin" ? (
-              <Navigate to="/admin-dashboard" />
+            role === "superadmin" || role === "admin" ? (
+              <Navigate to="/admin-dashboard" replace />
             ) : role === "business" ? (
-              <Navigate to="/client-dashboard" />
+              <Navigate to="/client-dashboard" replace />
             ) : (
-              <Navigate to="/login" />
+              <Navigate to="/login" replace />
             )
           }
         />
