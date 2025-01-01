@@ -36,7 +36,7 @@ const AdminDashboard = ({ handleLogout }) => {
     setError("");
     try {
       if (role === "superadmin") {
-        const { data, error } = await supabase.from("admins").select("*");
+        const { data, error } = await supabase.from("admins").select("*, users(email)");
         if (error) throw error;
         setAdmins(data);
       } else {
@@ -177,6 +177,8 @@ const AdminDashboard = ({ handleLogout }) => {
           columns={[
             { header: "Name", accessor: "name" },
             { header: "Email", accessor: "email" },
+            { header: "Phone", accessor: "phone" },
+            { header: "Created At", accessor: "created_at" },
           ]}
           actions={
             role === "superadmin"
@@ -201,8 +203,9 @@ const AdminDashboard = ({ handleLogout }) => {
             <CustomTable
               data={admins}
               columns={[
-                { header: "Email", accessor: "email" },
+                { header: "Email", accessor: "users.email" },
                 { header: "Role", accessor: "role" },
+                { header: "Created At", accessor: "created_at" },
               ]}
               actions={[
                 {
