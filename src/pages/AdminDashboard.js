@@ -97,6 +97,27 @@ const AdminDashboard = ({ handleLogout }) => {
     }
   };
 
+  // Update last payment date for a business
+  const handleUpdateLastPayment = async (id, lastPayment) => {
+    setError("");
+    setSuccess("");
+
+    try {
+      const { error } = await supabase
+        .from("businesses")
+        .update({ last_payment: lastPayment })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setSuccess("Last payment date updated successfully!");
+      fetchBusinesses();
+    } catch (error) {
+      console.error("Error updating last payment:", error.message);
+      setError("Failed to update last payment. Please try again.");
+    }
+  };
+
   // Delete a business (only for superadmin)
   const handleDeleteBusiness = async (id) => {
     setError("");
@@ -233,6 +254,17 @@ const AdminDashboard = ({ handleLogout }) => {
             { header: "Email", accessor: "email" },
             { header: "Phone", accessor: "phone" },
             { header: "Created At", accessor: "created_at" },
+            {
+              header: "Last Payment",
+              accessor: "last_payment",
+              render: (row) => (
+                <input
+                  type="date"
+                  value={row.last_payment ? row.last_payment.split("T")[0] : ""}
+                  onChange={(e) => handleUpdateLastPayment(row.id, e.target.value)}
+                />
+              ),
+            },
           ]}
           actions={
             role === "superadmin"
@@ -259,7 +291,6 @@ const AdminDashboard = ({ handleLogout }) => {
               columns={[
                 { header: "Email", accessor: "email" },
                 { header: "Role", accessor: "role" },
-                { header: "Created At", accessor: "created_at" },
               ]}
               actions={[
                 {
