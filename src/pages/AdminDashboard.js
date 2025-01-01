@@ -12,7 +12,7 @@ const AdminDashboard = ({ handleLogout }) => {
   const [success, setSuccess] = useState("");
   const [showCreateAccountModal, setShowCreateAccountModal] = useState(false);
   const [formData, setFormData] = useState({ name: "", email: "", role: "business" });
-  const role = localStorage.getItem("role"); // Get the logged-in user's role
+  const role = localStorage.getItem("role");
 
   // Fetch all businesses
   const fetchBusinesses = async () => {
@@ -36,11 +36,24 @@ const AdminDashboard = ({ handleLogout }) => {
     setError("");
     try {
       if (role === "superadmin") {
-        const { data, error } = await supabase.from("admins").select("*, users(email)");
-        if (error) throw error;
-        setAdmins(data);
+        const { data: adminsData, error: adminsError } = await supabase.from("admins").select("*");
+        if (adminsError) throw adminsError;
+
+        const { data: usersData, error: usersError } = await supabase
+          .from("users")
+          .select("id, email")
+          .in("id", adminsData.map((admin) => admin.id));
+
+        if (usersError) throw usersError;
+
+        const adminsWithEmails = adminsData.map((admin) => {
+          const user = usersData.find((user) => user.id === admin.id);
+          return { ...admin, email: user ? user.email : "N/A" };
+        });
+
+        setAdmins(adminsWithEmails);
       } else {
-        setAdmins([]); // Normal admins cannot see other admins
+        setAdmins([]);
       }
     } catch (error) {
       console.error("Error fetching admins:", error.message);
@@ -55,7 +68,6 @@ const AdminDashboard = ({ handleLogout }) => {
     setError("");
     setSuccess("");
 
-    // Basic form validation
     if (!formData.name || !formData.email || !formData.role) {
       setError("Name, Email, and Role are required fields.");
       return;
@@ -75,10 +87,10 @@ const AdminDashboard = ({ handleLogout }) => {
       }
 
       setSuccess("Account created successfully!");
-      fetchBusinesses(); // Refresh the list of businesses
-      fetchAdmins(); // Refresh the list of admins
-      setShowCreateAccountModal(false); // Close the modal
-      setFormData({ name: "", email: "", role: "business" }); // Clear the form
+      fetchBusinesses();
+      fetchAdmins();
+      setShowCreateAccountModal(false);
+      setFormData({ name: "", email: "", role: "business" });
     } catch (error) {
       console.error("Error creating account:", error.message);
       setError("Failed to create account. Please try again.");
@@ -95,17 +107,14 @@ const AdminDashboard = ({ handleLogout }) => {
       return;
     }
 
-    // Confirmation dialog
     if (!window.confirm("Are you sure you want to delete this business?")) {
       return;
     }
 
     try {
-      // Step 1: Delete the business from the businesses table
       const { error: businessError } = await supabase.from("businesses").delete().eq("id", id);
       if (businessError) throw businessError;
 
-      // Step 2: Delete the user from the users table
       const { error: userError } = await supabase.from("users").delete().eq("id", id);
       if (userError) throw userError;
 
@@ -127,17 +136,14 @@ const AdminDashboard = ({ handleLogout }) => {
       return;
     }
 
-    // Confirmation dialog
     if (!window.confirm("Are you sure you want to delete this admin?")) {
       return;
     }
 
     try {
-      // Step 1: Delete the admin from the admins table
       const { error: adminError } = await supabase.from("admins").delete().eq("id", id);
       if (adminError) throw adminError;
 
-      // Step 2: Delete the user from the users table
       const { error: userError } = await supabase.from("users").delete().eq("id", id);
       if (userError) throw userError;
 
@@ -167,6 +173,54 @@ const AdminDashboard = ({ handleLogout }) => {
           Logout
         </Button>
       </div>
+
+      {/* Create Account Modal */}
+      <Modal show={showCreateAccountModal} onHide={() => setShowCreateAccountModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Create Account</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Name</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Enter name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Email</Form.Label>
+              <Form.Control
+                type="email"
+                placeholder="Enter email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Role</Form.Label>
+              <Form.Select
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              >
+                <option value="business">Business</option>
+                <option value="admin">Admin</option>
+                <option value="superadmin">Superadmin</option>
+              </Form.Select>
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowCreateAccountModal(false)}>
+            Close
+          </Button>
+          <Button variant="primary" onClick={handleCreateAccount}>
+            Create Account
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       <h3>Businesses</h3>
       {businessesLoading ? (
@@ -203,7 +257,7 @@ const AdminDashboard = ({ handleLogout }) => {
             <CustomTable
               data={admins}
               columns={[
-                { header: "Email", accessor: "users.email" },
+                { header: "Email", accessor: "email" },
                 { header: "Role", accessor: "role" },
                 { header: "Created At", accessor: "created_at" },
               ]}
