@@ -24,18 +24,14 @@ const ClientDashboard = () => {
 
       const userId = sessionData.session.user.id;
 
-      // Fetch the user record where the role is "business"
+      // Fetch the user record from the public.users table
       const { data: userData, error: userError } = await supabase
         .from("users")
         .select("*")
         .eq("id", userId)
-        .eq("role", "business") // Ensure it's a business user
         .single();
 
       if (userError) {
-        if (userError.code === "PGRST116") {
-          throw new Error("No business account found for the logged-in user.");
-        }
         throw userError;
       }
 
@@ -62,13 +58,6 @@ const ClientDashboard = () => {
     }
   };
 
-  const handleCopyApiKey = () => {
-    if (user?.api_key) {
-      navigator.clipboard.writeText(user.api_key);
-      alert("API Key copied to clipboard!");
-    }
-  };
-
   return (
     <div className="container mt-5">
       <h1>Client Dashboard</h1>
@@ -82,26 +71,10 @@ const ClientDashboard = () => {
         <Alert variant="danger">{error}</Alert>
       ) : (
         <div className="mt-4">
-          <h2>Welcome, {user.business_name || "User"}!</h2>
+          <h2>Welcome, {user.name || "User"}!</h2>
           <p>
-            <strong>Contact Email:</strong> {user.contact_email}
+            <strong>Email:</strong> {user.email}
           </p>
-          <p>
-            <strong>API Key:</strong>{" "}
-            {user.api_key ? (
-              <>
-                {user.api_key}{" "}
-                <Button variant="primary" size="sm" onClick={handleCopyApiKey}>
-                  Copy
-                </Button>
-              </>
-            ) : (
-              "Not set"
-            )}
-          </p>
-          <Button variant="secondary" onClick={fetchUser} className="mt-3">
-            Refresh
-          </Button>
         </div>
       )}
     </div>

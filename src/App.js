@@ -8,15 +8,13 @@ import { supabase } from "./supabaseClient"; // Import Supabase client
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const App = () => {
-  const [role, setRole] = useState(localStorage.getItem("role") || ""); // Persist role across refreshes
+  const [role, setRole] = useState(localStorage.getItem("role")); // Initialize role from localStorage
 
   // Sync role state with localStorage whenever it changes
   useEffect(() => {
-    console.log("Current role:", role); // Debug: Log the role
-    if (role) {
-      localStorage.setItem("role", role);
-    } else {
-      localStorage.removeItem("role");
+    const storedRole = localStorage.getItem("role");
+    if (storedRole !== role) {
+      setRole(storedRole);
     }
   }, [role]);
 
@@ -24,9 +22,10 @@ const App = () => {
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut(); // Clear Supabase session
-      setRole(""); // Clear role state
       localStorage.removeItem("role"); // Remove role from storage
-      localStorage.removeItem("token"); // Clear token for added security
+      localStorage.removeItem("token"); // Clear token for security
+      setRole(null); // Update role state
+      window.location.href = "/login"; // Redirect to login page
     } catch (err) {
       console.error("Error during logout:", err);
     }
@@ -62,7 +61,9 @@ const App = () => {
         <Route
           path="*"
           element={
-            role === "superadmin" || role === "admin" ? (
+            !role ? (
+              <Navigate to="/login" replace />
+            ) : role === "superadmin" || role === "admin" ? (
               <Navigate to="/admin-dashboard" replace />
             ) : role === "business" ? (
               <Navigate to="/client-dashboard" replace />

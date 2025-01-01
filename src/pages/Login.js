@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Login = ({ setRole }) => {
@@ -6,7 +6,6 @@ const Login = ({ setRole }) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [loginSuccess, setLoginSuccess] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -33,7 +32,19 @@ const Login = ({ setRole }) => {
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
       setRole(data.role); // Update the role state
-      setLoginSuccess(true); // Trigger navigation
+
+      // Redirect based on role
+      if (data.role === "superadmin" || data.role === "admin") {
+        console.log("Navigating to /admin-dashboard"); // Debug: Log navigation
+        navigate("/admin-dashboard", { replace: true });
+        console.log("Navigation to /admin-dashboard completed"); // Debug: Confirm navigation
+      } else if (data.role === "business") {
+        console.log("Navigating to /client-dashboard"); // Debug: Log navigation
+        navigate("/client-dashboard", { replace: true });
+        console.log("Navigation to /client-dashboard completed"); // Debug: Confirm navigation
+      } else {
+        throw new Error("Invalid role received from server");
+      }
     } catch (err) {
       console.error("Login error:", err); // Debug: Log the error
       setError(err.message || "Something went wrong. Please try again.");
@@ -42,30 +53,17 @@ const Login = ({ setRole }) => {
     }
   };
 
-  // Navigate after role is updated
-  useEffect(() => {
-    if (loginSuccess) {
-      const role = localStorage.getItem("role");
-      if (role === "superadmin" || role === "admin") {
-        console.log("Navigating to /admin-dashboard"); // Debug: Log navigation
-        navigate("/admin-dashboard", { replace: true });
-      } else if (role === "business") {
-        console.log("Navigating to /client-dashboard"); // Debug: Log navigation
-        navigate("/client-dashboard", { replace: true });
-      }
-      setLoginSuccess(false); // Reset the flag
-    }
-  }, [loginSuccess, navigate]);
-
   return (
     <div className="login-container">
       <div className="login-box">
         <h2>Welcome Back</h2>
         <form onSubmit={handleLogin}>
           <div className="form-group">
-            <label>Email</label>
+            <label htmlFor="email">Email</label>
             <input
               type="email"
+              id="email"
+              name="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
@@ -74,9 +72,11 @@ const Login = ({ setRole }) => {
             />
           </div>
           <div className="form-group">
-            <label>Password</label>
+            <label htmlFor="password">Password</label>
             <input
               type="password"
+              id="password"
+              name="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
@@ -86,14 +86,7 @@ const Login = ({ setRole }) => {
           </div>
           {error && <div className="error-message">{error}</div>}
           <button type="submit" disabled={loading}>
-            {loading ? (
-              <div className="loading-spinner">
-                <div className="spinner"></div>
-                Logging in...
-              </div>
-            ) : (
-              "Login"
-            )}
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
       </div>
