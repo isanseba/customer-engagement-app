@@ -40,7 +40,7 @@ const Login = ({ setRole }) => {
         console.log("Navigation to /admin-dashboard completed"); // Debug: Confirm navigation
       } else if (data.role === "business") {
         console.log("Navigating to /client-dashboard"); // Debug: Log navigation
-        navigate("/client-dashboard", { replace: true });
+        navigate(`/client-dashboard/${data.id}`, { replace: true }); // Pass the business ID
         console.log("Navigation to /client-dashboard completed"); // Debug: Confirm navigation
       } else {
         throw new Error("Invalid role received from server");

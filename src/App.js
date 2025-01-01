@@ -4,13 +4,12 @@ import Login from "./pages/Login";
 import AdminDashboard from "./pages/AdminDashboard";
 import ClientDashboard from "./pages/ClientDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { supabase } from "./supabaseClient"; // Import Supabase client
+import { supabase } from "./supabaseClient";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const App = () => {
-  const [role, setRole] = useState(localStorage.getItem("role")); // Initialize role from localStorage
+  const [role, setRole] = useState(localStorage.getItem("role"));
 
-  // Sync role state with localStorage whenever it changes
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
     if (storedRole !== role) {
@@ -18,14 +17,13 @@ const App = () => {
     }
   }, [role]);
 
-  // Function to handle logout
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut(); // Clear Supabase session
-      localStorage.removeItem("role"); // Remove role from storage
-      localStorage.removeItem("token"); // Clear token for security
-      setRole(null); // Update role state
-      window.location.href = "/login"; // Redirect to login page
+      await supabase.auth.signOut();
+      localStorage.removeItem("role");
+      localStorage.removeItem("token");
+      setRole(null);
+      window.location.href = "/login";
     } catch (err) {
       console.error("Error during logout:", err);
     }
@@ -34,10 +32,7 @@ const App = () => {
   return (
     <Router>
       <Routes>
-        {/* Login Route */}
         <Route path="/login" element={<Login setRole={setRole} />} />
-
-        {/* Admin Dashboard Route */}
         <Route
           path="/admin-dashboard"
           element={
@@ -46,8 +41,6 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
-        {/* Client Dashboard Route */}
         <Route
           path="/client-dashboard"
           element={
@@ -56,8 +49,14 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-
-        {/* Default Route: Redirect based on role */}
+        <Route
+          path="/business-dashboard/:id"
+          element={
+            <ProtectedRoute roleRequired={["superadmin", "admin"]} role={role}>
+              <ClientDashboard handleLogout={handleLogout} isAdminView={true} />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="*"
           element={

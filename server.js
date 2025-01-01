@@ -150,6 +150,33 @@ app.post("/api/create-user", async (req, res) => {
   }
 });
 
+// Reset password endpoint
+app.post("/api/reset-password", async (req, res) => {
+  const { id, email } = req.body;
+
+  try {
+    // Generate a new password
+    const newPassword = "TempPassword123"; // You can generate a random password here
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password in the users table
+    const { error: userError } = await supabase
+      .from("users")
+      .update({ password_hash: passwordHash })
+      .eq("id", id);
+
+    if (userError) throw userError;
+
+    // Send the new password to the user's email (optional)
+    // Implement email sending logic here
+
+    res.status(200).json({ message: "Password reset successfully!" });
+  } catch (err) {
+    console.error("Error resetting password:", err.message);
+    res.status(500).json({ error: "Failed to reset password. Please try again." });
+  }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
